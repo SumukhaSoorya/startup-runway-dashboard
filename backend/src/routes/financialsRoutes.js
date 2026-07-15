@@ -1,9 +1,12 @@
 import express from 'express';
-import { getFinancialData } from '../controllers/financialsController.js';
+import { getFinancialData, addMilestone } from '../controllers/financialsController.js';
 
 const router = express.Router();
 
-// Route all incoming data queries through our secure controller engine
+// Fetch corporate parameters
 router.get('/financials', getFinancialData);
+
+// Securely append corporate milestones
+router.post('/milestones', addMilestone);
 
 export default router;

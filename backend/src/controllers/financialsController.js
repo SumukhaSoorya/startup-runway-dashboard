@@ -37,3 +37,42 @@ export const getFinancialData = async (req, res) => {
     res.status(500).json({ error: 'Internal system secure retrieval breakdown.' });
   }
 };
+// POST: Securely validate and insert a new financial milestone row
+export const addMilestone = async (req, res) => {
+  const { name, amount, monthIndex } = req.body;
+
+  // 1. Strict Request Validation (Fail early, fail loudly)
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ error: 'Validation Failure: A valid milestone name is required.' });
+  }
+  
+  const parsedAmount = parseFloat(amount);
+  if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ error: 'Validation Failure: Amount must be a positive numeric value.' });
+  }
+
+  const parsedMonth = parseInt(monthIndex, 10);
+  if (isNaN(parsedMonth) || parsedMonth < 0 || parsedMonth > 12) {
+    return res.status(400).json({ error: 'Validation Failure: Month Index must be a valid runway timeline interval (0-12).' });
+  }
+
+  try {
+    // 2. Parameterized SQL Mutation to prevent SQL Injections
+    const queryStr = 'INSERT INTO funding_milestones (company_id, name, amount, month_index) VALUES (?, ?, ?, ?)';
+    const [result] = await pool.query(queryStr, [1, name.trim(), parsedAmount, parsedMonth]);
+
+    // 3. Return the newly created resource parameter
+    res.status(201).json({
+      message: 'Milestone recorded securely.',
+      milestone: {
+        id: result.insertId,
+        name: name.trim(),
+        amount: parsedAmount,
+        monthIndex: parsedMonth
+      }
+    });
+  } catch (error) {
+    console.error('Secure Write Operation Failure:', error);
+    res.status(500).json({ error: 'Database pipeline rewrite failure.' });
+  }
+};
