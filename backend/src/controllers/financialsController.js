@@ -76,3 +76,21 @@ export const addMilestone = async (req, res) => {
     res.status(500).json({ error: 'Database pipeline rewrite failure.' });
   }
 };
+// DELETE: Securely remove a milestone parameter by its database ID
+export const deleteMilestone = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Run a parameterized SQL statement to safely delete the target milestone
+    const [result] = await pool.query('DELETE FROM funding_milestones WHERE id = ?', [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Milestone target not found in registry.' });
+    }
+
+    res.status(200).json({ message: 'Milestone successfully purged from database.' });
+  } catch (error) {
+    console.error('Purge Operation Failure:', error);
+    res.status(500).json({ error: 'Database pipeline deletion failure.' });
+  }
+};

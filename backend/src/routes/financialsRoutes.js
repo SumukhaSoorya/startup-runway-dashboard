@@ -1,12 +1,12 @@
 import express from 'express';
-import { getFinancialData, addMilestone } from '../controllers/financialsController.js';
+import { getFinancialData, addMilestone, deleteMilestone } from '../controllers/financialsController.js';
 
 const router = express.Router();
 
-// Fetch corporate parameters
 router.get('/financials', getFinancialData);
-
-// Securely append corporate milestones
 router.post('/milestones', addMilestone);
+
+// Dynamic route targeting a specific ID parameter
+router.delete('/milestones/:id', deleteMilestone);
 
 export default router;
