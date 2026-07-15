@@ -120,6 +120,24 @@ function App() {
     }
   };
 
+  // Export the current simulated runway projection to CSV
+  const handleExportCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Month,Simulated Balance (INR/USD)\n";
+
+    chartData.forEach(row => {
+      csvContent += `${row.name},${row.Balance}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${dbData.companyName}_runway_projection.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Helper function to format money cleanly based on country system
   const formatMoney = (value) => {
     if (currency === 'INR') {
@@ -189,6 +207,8 @@ function App() {
 
         {/* Currency Switcher & Dynamic Multiplayer Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          
+          {/* Currency Switch Selection Block */}
           <div style={{ backgroundColor: '#1e293b', padding: '4px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', gap: '4px' }}>
             <button 
               onClick={() => setCurrency('INR')}
@@ -203,6 +223,16 @@ function App() {
               USD ($)
             </button>
           </div>
+
+          {/* PLACED SCENARIO EXPORT UTILITY BUTTON */}
+          <button 
+            onClick={handleExportCSV}
+            style={{ padding: '8px 16px', borderRadius: '8px', backgroundColor: '#0ea5e9', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', transition: 'background-color 0.2s' }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#0284c7'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#0ea5e9'}
+          >
+            📤 Export Scenario
+          </button>
           
           {isConnected ? (
             <span style={{ fontSize: '11px', backgroundColor: '#064e3b', padding: '6px 12px', borderRadius: '20px', color: '#34d399', border: '1px solid #047857', fontWeight: '600' }}>MULTIPLAYER_ACTIVE</span>
