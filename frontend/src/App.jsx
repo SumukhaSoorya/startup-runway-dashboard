@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { io } from 'socket.io-client';
+
+// Establish a single persistent connection to our backend
+const socket = io('http://localhost:5000');
 
 function App() {
   const [dbData, setDbData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Dynamic Socket Connection State
+  const [isConnected, setIsConnected] = useState(socket.connected);
 
   // Currency State (USD or INR)
   const [currency, setCurrency] = useState('INR'); // Defaulted to Indian Rupees (₹)!
@@ -16,8 +23,44 @@ function App() {
   // New Milestone Form State
   const [newMilestone, setNewMilestone] = useState({ name: '', amount: '', monthIndex: 1 });
 
+  // 1. Fetch initial baseline financials from MySQL
   useEffect(() => {
     fetchFinancials();
+  }, []);
+
+  // 2. Setup Socket event listeners & Connection state monitoring
+  useEffect(() => {
+    function onConnect() {
+      setIsConnected(true);
+    }
+
+    function onDisconnect() {
+      setIsConnected(false);
+    }
+
+    function onReceiveBudgetUpdate(data) {
+      if (data.hiringMultiplier !== undefined) {
+        setHiringMultiplier(data.hiringMultiplier);
+      }
+      if (data.marketingMultiplier !== undefined) {
+        setMarketingMultiplier(data.marketingMultiplier);
+      }
+    }
+
+    // Set initial connection status
+    if (socket.connected) {
+      setIsConnected(true);
+    }
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('receive_budget_update', onReceiveBudgetUpdate);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('receive_budget_update', onReceiveBudgetUpdate);
+    };
   }, []);
 
   const fetchFinancials = async () => {
@@ -31,6 +74,17 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Broadcast slider adjustments to all other users instantly
+  const handleHiringChange = (value) => {
+    setHiringMultiplier(value);
+    socket.emit('budget_update', { hiringMultiplier: value });
+  };
+
+  const handleMarketingChange = (value) => {
+    setMarketingMultiplier(value);
+    socket.emit('budget_update', { marketingMultiplier: value });
   };
 
   const handleAddMilestone = async (e) => {
@@ -69,10 +123,8 @@ function App() {
   // Helper function to format money cleanly based on country system
   const formatMoney = (value) => {
     if (currency === 'INR') {
-      // Indian Format: ₹1,00,000 (Lakhs/Crores)
       return '₹' + Math.round(value).toLocaleString('en-IN');
     }
-    // US Format: $100,000 (Millions)
     return '$' + Math.round(value).toLocaleString('en-US');
   };
 
@@ -135,7 +187,7 @@ function App() {
           <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', margin: 0 }}>Enterprise Scenario Planning Simulation Matrix Engine</p>
         </div>
 
-        {/* Currency Switcher Toggle */}
+        {/* Currency Switcher & Dynamic Multiplayer Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ backgroundColor: '#1e293b', padding: '4px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', gap: '4px' }}>
             <button 
@@ -151,7 +203,12 @@ function App() {
               USD ($)
             </button>
           </div>
-          <span style={{ fontSize: '11px', backgroundColor: '#1e293b', padding: '6px 12px', borderRadius: '20px', color: '#22c55e', border: '1px solid #1f2937', fontWeight: '600' }}>LIVE_CONNECTED</span>
+          
+          {isConnected ? (
+            <span style={{ fontSize: '11px', backgroundColor: '#064e3b', padding: '6px 12px', borderRadius: '20px', color: '#34d399', border: '1px solid #047857', fontWeight: '600' }}>MULTIPLAYER_ACTIVE</span>
+          ) : (
+            <span style={{ fontSize: '11px', backgroundColor: '#1e293b', padding: '6px 12px', borderRadius: '20px', color: '#94a3b8', border: '1px solid #1f2937', fontWeight: '600' }}>LIVE_CONNECTED</span>
+          )}
         </div>
       </header>
 
@@ -181,7 +238,7 @@ function App() {
         {/* Left Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Sliders */}
+          {/* Sliders (Using Broadcasters) */}
           <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
             <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '20px' }}>
               <h3 style={{ color: '#38bdf8', fontSize: '16px', fontWeight: '700', margin: 0 }}>Capital Simulation Sliders</h3>
@@ -195,7 +252,7 @@ function App() {
               </div>
               <input 
                 type="range" min="50" max="250" value={hiringMultiplier} 
-                onChange={(e) => setHiringMultiplier(Number(e.target.value))}
+                onChange={(e) => handleHiringChange(Number(e.target.value))}
                 style={{ width: '100%', height: '6px', borderRadius: '3px', accentColor: '#38bdf8', cursor: 'pointer' }}
               />
             </div>
@@ -207,7 +264,7 @@ function App() {
               </div>
               <input 
                 type="range" min="50" max="250" value={marketingMultiplier} 
-                onChange={(e) => setMarketingMultiplier(Number(e.target.value))}
+                onChange={(e) => handleMarketingChange(Number(e.target.value))}
                 style={{ width: '100%', height: '6px', borderRadius: '3px', accentColor: '#f43f5e', cursor: 'pointer' }}
               />
             </div>
