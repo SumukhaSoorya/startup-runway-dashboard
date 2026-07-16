@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { io } from 'socket.io-client';
 
 // Establish a single persistent connection to our backend
@@ -171,7 +171,8 @@ function App() {
   // --- RUNWAY SIMULATION CALCULATIONS ---
   const simulatedEngineering = dbData.expenses.engineering * (hiringMultiplier / 100);
   const simulatedMarketing = dbData.expenses.marketing * (marketingMultiplier / 100);
-  const totalSimulatedBurn = simulatedEngineering + simulatedMarketing + dbData.expenses.operations;
+  const fixedOperations = dbData.expenses.operations;
+  const totalSimulatedBurn = simulatedEngineering + simulatedMarketing + fixedOperations;
   const netMonthlyBurn = totalSimulatedBurn - dbData.monthlyRevenue;
 
   let currentCashRunway = dbData.currentCash;
@@ -179,7 +180,7 @@ function App() {
     const currentMonth = i + 1;
     const monthlyInflow = dbData.milestones
       .filter(m => m.monthIndex === currentMonth)
-      .reduce((sum, m) => sum + m.amount, 0);
+      .reduce((sum, sumAmount) => sum + sumAmount.amount, 0);
 
     currentCashRunway = currentCashRunway - netMonthlyBurn + monthlyInflow;
     if (currentCashRunway < 0) currentCashRunway = 0;
@@ -191,6 +192,13 @@ function App() {
   });
 
   const calculatedRunwayMonths = netMonthlyBurn > 0 ? (dbData.currentCash / netMonthlyBurn).toFixed(1) : '∞';
+
+  // Dynamic Data Setup for the new Pie Chart Breakdown
+  const pieData = [
+    { name: 'Engineering', value: Math.round(simulatedEngineering), color: '#38bdf8' },
+    { name: 'Marketing', value: Math.round(simulatedMarketing), color: '#f43f5e' },
+    { name: 'Operations', value: Math.round(fixedOperations), color: '#eab308' }
+  ];
 
   return (
     <div style={{ backgroundColor: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '32px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -208,7 +216,6 @@ function App() {
         {/* Currency Switcher & Dynamic Multiplayer Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           
-          {/* Currency Switch Selection Block */}
           <div style={{ backgroundColor: '#1e293b', padding: '4px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', gap: '4px' }}>
             <button 
               onClick={() => setCurrency('INR')}
@@ -224,7 +231,6 @@ function App() {
             </button>
           </div>
 
-          {/* PLACED SCENARIO EXPORT UTILITY BUTTON */}
           <button 
             onClick={handleExportCSV}
             style={{ padding: '8px 16px', borderRadius: '8px', backgroundColor: '#0ea5e9', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', transition: 'background-color 0.2s' }}
@@ -375,30 +381,87 @@ function App() {
 
         </div>
 
-        {/* Right Column: Interactive Chart */}
-        <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1f2937', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '24px' }}>
-            <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>12-Month Simulated Runway Delta</h3>
-            <p style={{ color: '#64748b', fontSize: '12px', margin: '4px 0 0 0' }}>Real-time projection of cash over 12 months</p>
-          </div>
+        {/* Right Column: Interactive Charts */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          <div style={{ width: '100%', height: '360px', flexGrow: 1 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                <XAxis dataKey="name" stroke="#475569" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#475569" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => currency === 'INR' ? `₹${(val / 1000)}k` : `$${(val / 1000)}k`} />
-                <Tooltip contentStyle={{ backgroundColor: '#111827', borderColor: '#1f2937', borderRadius: '8px', color: '#fff', fontSize: '13px' }} formatter={(value) => [formatMoney(value), 'Simulated Cash']} />
-                <Area type="monotone" dataKey="Balance" stroke="#0ea5e9" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Chart 1: Runway Area Graph */}
+          <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1f2937', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '24px' }}>
+              <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>12-Month Simulated Runway Delta</h3>
+              <p style={{ color: '#64748b', fontSize: '12px', margin: '4px 0 0 0' }}>Real-time projection of cash over 12 months</p>
+            </div>
+            
+            <div style={{ width: '100%', height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                  <XAxis dataKey="name" stroke="#475569" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#475569" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => currency === 'INR' ? `₹${(val / 1000)}k` : `$${(val / 1000)}k`} />
+                  <Tooltip contentStyle={{ backgroundColor: '#111827', borderColor: '#1f2937', borderRadius: '8px', color: '#fff', fontSize: '13px' }} formatter={(value) => [formatMoney(value), 'Simulated Cash']} />
+                  <Area type="monotone" dataKey="Balance" stroke="#0ea5e9" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
+
+          {/* Chart 2: NEW! Live Dynamic Expense Allocation Pie Breakdown */}
+          <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1f2937', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>Simulated Operational Expense Composition</h3>
+              <p style={{ color: '#64748b', fontSize: '12px', margin: '4px 0 0 0' }}>Proportional resource tracking based on real-time slider metrics</p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: '16px' }}>
+              {/* Pie Component wrapper */}
+              <div style={{ width: '180px', height: '180px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#111827', borderColor: '#1f2937', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
+                      formatter={(value) => [formatMoney(value), 'Burn Metric']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Explicit Color Labels Grid Column */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '180px' }}>
+                {pieData.map((item, idx) => {
+                  const percentage = ((item.value / totalSimulatedBurn) * 100).toFixed(1);
+                  return (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '3px', backgroundColor: item.color }}></span>
+                      <div style={{ fontSize: '13px' }}>
+                        <span style={{ fontWeight: '600', color: '#f8fafc' }}>{item.name}: </span>
+                        <span style={{ color: '#94a3b8' }}>{formatMoney(item.value)}/mo ({percentage}%)</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
       </div>
