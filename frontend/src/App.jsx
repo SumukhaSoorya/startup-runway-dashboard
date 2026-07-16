@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:5000');
+// RECONFIGURED PORT TO TARGET LANE 5002 COMPLETELY
+const socket = io('http://localhost:5002');
 
 function App() {
   const [dbData, setDbData] = useState(null);
@@ -48,7 +49,7 @@ function App() {
 
   const fetchFinancials = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/financials');
+      const response = await fetch('http://localhost:5002/api/financials');
       if (!response.ok) throw new Error('Failed to load secure pipeline data.');
       const data = await response.json();
       setDbData(data);
@@ -74,6 +75,62 @@ function App() {
     socket.emit('budget_update', { hiringMultiplier, marketingMultiplier, growthEfficiency: value });
   };
 
+  // Native FileReader parser to process client-side spreadsheet templates
+  const handleCSVUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target.result;
+      
+      // Split clean rows while clearing trailing white spaces
+      const rows = text.split('\n').map(row => row.trim()).filter(row => row.length > 0);
+      
+      // Extract structure from row matrix: expects "Inflow Name, Amount, Target Month"
+      const parsedMilestones = [];
+      
+      // Start processing from Index 1 to safely bypass columns labels headers row
+      for (let i = 1; i < rows.length; i++) {
+        const columns = rows[i].split(',');
+        if (columns.length >= 3) {
+          parsedMilestones.push({
+            name: columns[0].trim(),
+            amount: Number(columns[1]),
+            monthIndex: parseInt(columns[2], 10)
+          });
+        }
+      }
+
+      if (parsedMilestones.length === 0) {
+        alert("Parsing Abortion: Empty document grid layout mapping encountered.");
+        return;
+      }
+
+      // Transmission processing to backend pipeline targeting 5002
+      try {
+        const response = await fetch('http://localhost:5002/api/milestones/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ milestones: parsedMilestones })
+        });
+
+        if (!response.ok) {
+          const errMessage = await response.json();
+          alert(errMessage.error || "Spreadsheet upload validation rejected.");
+          return;
+        }
+
+        alert(`Success: Synced ${parsedMilestones.length} financial ledger points.`);
+        fetchFinancials(); // Refresh UI metrics view instantly
+      } catch (err) {
+        alert("Transmission failure linking spreadsheet matrix data components.");
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
   const handleAddMilestone = async (e) => {
     e.preventDefault();
 
@@ -89,7 +146,7 @@ function App() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/milestones', {
+      const response = await fetch('http://localhost:5002/api/milestones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -111,7 +168,7 @@ function App() {
   const handleDeleteMilestone = async (id) => {
     if (!window.confirm("Purge milestone?")) return;
     try {
-      await fetch(`http://localhost:5000/api/milestones/${id}`, { method: 'DELETE' });
+      await fetch(`http://localhost:5002/api/milestones/${id}`, { method: 'DELETE' });
       fetchFinancials();
     } catch (err) {
       alert(err.message);
@@ -277,6 +334,22 @@ function App() {
             </div>
           </div>
 
+          {/* Institutional CSV Batch Ingestion Module */}
+          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
+            <h3 style={{ color: '#eab308', fontSize: '16px', fontWeight: '700', margin: '0 0 8px 0' }}>Institutional CSV Batch Ingestion</h3>
+            <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 16px 0' }}>Drop a ledger template sheet to bulk-load recurring revenue events instantly.</p>
+            
+            <div style={{ border: '2px dashed #334155', borderRadius: '8px', padding: '20px', textAlign: 'center', cursor: 'pointer', backgroundColor: '#070a13' }}
+                 onClick={() => document.getElementById('csvFileInput').click()}>
+              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>📁</span>
+              <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500' }}>Click to select layout spreadsheet ledger</span>
+              <input 
+                id="csvFileInput" type="file" accept=".csv" 
+                onChange={handleCSVUpload} style={{ display: 'none' }} 
+              />
+            </div>
+          </div>
+
           {/* Form */}
           <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
             <h3 style={{ color: '#fff', fontSize: '16px', fontWeight: '700', margin: '0 0 20px 0' }}>Inject Capital Infusion Event</h3>
@@ -290,7 +363,7 @@ function App() {
             </form>
           </div>
 
-          {/* RESTORED: Active Milestone Registry List Component Layout */}
+          {/* Active Milestone Registry List Component Layout */}
           <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
             <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '16px' }}>
               <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>Active Milestone Registry</h3>
@@ -360,6 +433,47 @@ function App() {
                   <span style={{ color: '#94a3b8' }}>{item.name}: <strong>{formatMoney(item.value)}/mo</strong></span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* PHASE 3 FEATURE: INSTITUTIONAL RUNWAY HEALTH ANALYTICS CORE */}
+          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
+            <h3 style={{ color: '#38bdf8', fontSize: '15px', fontWeight: '700', margin: '0 0 16px 0' }}>Institutional System Health Audit</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              {/* Metric Row 1: Net Runway Health Classification Index */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#070a13', borderRadius: '8px', border: '1px solid #1e293b' }}>
+                <span style={{ color: '#94a3b8', fontSize: '13px' }}>System Operational Rating:</span>
+                <span style={{ 
+                  fontSize: '13px', 
+                  fontWeight: '800', 
+                  padding: '4px 10px', 
+                  borderRadius: '20px',
+                  backgroundColor: finalRunwayMonthsCount >= 12 ? 'rgba(16, 185, 129, 0.15)' : finalRunwayMonthsCount >= 6 ? 'rgba(234, 179, 8, 0.15)' : 'rgba(244, 63, 94, 0.15)',
+                  color: finalRunwayMonthsCount >= 12 ? '#10b981' : finalRunwayMonthsCount >= 6 ? '#eab308' : '#f43f5e'
+                }}>
+                  {finalRunwayMonthsCount >= 12 ? 'OPTIMAL_RESERVE (SECURE)' : finalRunwayMonthsCount >= 6 ? 'BUFFERED_SURVIVAL (CAUTION)' : 'LIQUIDITY_BREACH (CRITICAL)'}
+                </span>
+              </div>
+
+              {/* Metric Row 2: Projected Net Horizon Vector Position */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#070a13', borderRadius: '8px', border: '1px solid #1e293b' }}>
+                <span style={{ color: '#94a3b8', fontSize: '13px' }}>Month-12 Projected Cash Delta:</span>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: chartData[11].Balance > dbData.currentCash ? '#10b981' : '#f43f5e' }}>
+                  {chartData[11].Balance > dbData.currentCash ? ' West +' : ' '}
+                  {formatMoney(Math.abs(chartData[11].Balance - dbData.currentCash))} Net Change
+                </span>
+              </div>
+
+              {/* Metric Row 3: Peak Burn Exposure Variable Identification */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#070a13', borderRadius: '8px', border: '1px solid #1e293b' }}>
+                <span style={{ color: '#94a3b8', fontSize: '13px' }}>Peak System Runway Exposure:</span>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: '#eab308' }}>
+                  {formatMoney(Math.max(...chartData.map(d => d.BurnRate)))}/mo
+                </span>
+              </div>
+
             </div>
           </div>
 
