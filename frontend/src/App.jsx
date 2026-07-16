@@ -47,7 +47,6 @@ function App() {
       }
     }
 
-    // Set initial connection status
     if (socket.connected) {
       setIsConnected(true);
     }
@@ -120,24 +119,6 @@ function App() {
     }
   };
 
-  // Export the current simulated runway projection to CSV
-  const handleExportCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Month,Simulated Balance (INR/USD)\n";
-
-    chartData.forEach(row => {
-      csvContent += `${row.name},${row.Balance}\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${dbData.companyName}_runway_projection.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   // Helper function to format money cleanly based on country system
   const formatMoney = (value) => {
     if (currency === 'INR') {
@@ -150,7 +131,7 @@ function App() {
     return (
       <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#f8fafc', fontFamily: 'sans-serif' }}>
         <div style={{ border: '4px solid #1e293b', borderTop: '4px solid #38bdf8', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite', marginBottom: '16px' }}></div>
-        <p style={{ color: '#94a3b8', fontSize: '14px', letterSpacing: '0.05em' }}>CONNECTING TO DATA PIPELINE...</p>
+        <p style={{ color: '#94a3b8', fontSize: '14px', letterSpacing: '0.05em' }}>LOADING RUNWAY PULSE DATA ENGINE...</p>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -193,12 +174,29 @@ function App() {
 
   const calculatedRunwayMonths = netMonthlyBurn > 0 ? (dbData.currentCash / netMonthlyBurn).toFixed(1) : '∞';
 
-  // Dynamic Data Setup for the new Pie Chart Breakdown
   const pieData = [
     { name: 'Engineering', value: Math.round(simulatedEngineering), color: '#38bdf8' },
     { name: 'Marketing', value: Math.round(simulatedMarketing), color: '#f43f5e' },
     { name: 'Operations', value: Math.round(fixedOperations), color: '#eab308' }
   ];
+
+  // Corrected placement for CSV Exporter to safely read generated chartData
+  const handleExportCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Month,Simulated Balance\n";
+
+    chartData.forEach(row => {
+      csvContent += `${row.name},${row.Balance}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${dbData.companyName}_runway_projection.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div style={{ backgroundColor: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '32px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -213,7 +211,7 @@ function App() {
           <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', margin: 0 }}>Enterprise Scenario Planning Simulation Matrix Engine</p>
         </div>
 
-        {/* Currency Switcher & Dynamic Multiplayer Badge */}
+        {/* Top Management Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           
           <div style={{ backgroundColor: '#1e293b', padding: '4px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', gap: '4px' }}>
@@ -274,7 +272,7 @@ function App() {
         {/* Left Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Sliders (Using Broadcasters) */}
+          {/* Sliders Block */}
           <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
             <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '20px' }}>
               <h3 style={{ color: '#38bdf8', fontSize: '16px', fontWeight: '700', margin: 0 }}>Capital Simulation Sliders</h3>
@@ -306,7 +304,7 @@ function App() {
             </div>
           </div>
 
-          {/* Form */}
+          {/* Milestone Injection Form */}
           <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1f2937' }}>
             <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '20px' }}>
               <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>Inject Capital Infusion Event</h3>
@@ -351,7 +349,7 @@ function App() {
             </form>
           </div>
 
-          {/* Registry List */}
+          {/* Active Registry Registry */}
           <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1f2937' }}>
             <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '16px' }}>
               <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>Active Milestone Registry</h3>
@@ -381,10 +379,10 @@ function App() {
 
         </div>
 
-        {/* Right Column: Interactive Charts */}
+        {/* Right Column: Interactive Analytics Matrix */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Chart 1: Runway Area Graph */}
+          {/* Main Area Chart */}
           <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1f2937', display: 'flex', flexDirection: 'column' }}>
             <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '24px' }}>
               <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>12-Month Simulated Runway Delta</h3>
@@ -410,7 +408,7 @@ function App() {
             </div>
           </div>
 
-          {/* Chart 2: NEW! Live Dynamic Expense Allocation Pie Breakdown */}
+          {/* Dynamic Allocation Pie Chart */}
           <div style={{ backgroundColor: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid #1f2937', display: 'flex', flexDirection: 'column' }}>
             <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '16px' }}>
               <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>Simulated Operational Expense Composition</h3>
@@ -418,7 +416,6 @@ function App() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: '16px' }}>
-              {/* Pie Component wrapper */}
               <div style={{ width: '180px', height: '180px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -443,7 +440,6 @@ function App() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Explicit Color Labels Grid Column */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '180px' }}>
                 {pieData.map((item, idx) => {
                   const percentage = ((item.value / totalSimulatedBurn) * 100).toFixed(1);
