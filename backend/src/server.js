@@ -10,13 +10,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Create HTTP server to share with Socket.io
 const httpServer = createServer(app);
-
-// 1. Array of allowed local origins
 const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
 
-// 2. Configure Socket.io CORS for both ports
 const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
@@ -24,7 +20,6 @@ const io = new Server(httpServer, {
   }
 });
 
-// 3. Configure Express CORS for both ports
 app.use(cors({ 
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -36,17 +31,26 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-// Main API Routes
 app.use('/api', financialsRoutes);
 
-// Socket.io Real-Time Orchestration
-io.on('connection', (socket) => {
-  console.log(`🔌 Client connected: ${socket.id}`);
+// Memory ledger cache so new connection tabs sync instantly
+let currentSessionState = {
+  hiringMultiplier: 100,
+  marketingMultiplier: 100,
+  growthEfficiency: 15
+};
 
-  // Listen for live budget updates from a user
+io.on('connection', (socket) => {
+  console.log(`🔌 Client connected to sync engine: ${socket.id}`);
+
+  // Send current state to newly opened tabs immediately
+  socket.emit('receive_budget_update', currentSessionState);
+
   socket.on('budget_update', (data) => {
-    // Broadcast the updated slider multipliers to everyone else
+    if (data.hiringMultiplier !== undefined) currentSessionState.hiringMultiplier = data.hiringMultiplier;
+    if (data.marketingMultiplier !== undefined) currentSessionState.marketingMultiplier = data.marketingMultiplier;
+    if (data.growthEfficiency !== undefined) currentSessionState.growthEfficiency = data.growthEfficiency;
+
     socket.broadcast.emit('receive_budget_update', data);
   });
 
@@ -55,7 +59,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start our wrapped HTTP server instead of app.listen
 httpServer.listen(PORT, () => {
   console.log(`🚀 Secure Financial Analytics engine operational on port ${PORT}`);
 });

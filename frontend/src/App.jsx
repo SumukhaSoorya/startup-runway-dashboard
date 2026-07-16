@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceArea, ReferenceLine } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { io } from 'socket.io-client';
 
 const socket = io('http://localhost:5000');
@@ -76,17 +76,35 @@ function App() {
 
   const handleAddMilestone = async (e) => {
     e.preventDefault();
+
+    const payload = {
+      name: newMilestone.name.trim(),
+      amount: Number(newMilestone.amount),
+      monthIndex: parseInt(newMilestone.monthIndex, 10) || 1
+    };
+
+    if (!payload.name || isNaN(payload.amount) || payload.amount <= 0) {
+      alert("Validation Rejected: Ensure amount is a positive number.");
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:5000/api/milestones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMilestone)
+        body: JSON.stringify(payload)
       });
-      if (!response.ok) return;
+      
+      if (!response.ok) {
+        const errData = await response.json();
+        alert(errData.error || 'Database pipeline validation failed.');
+        return;
+      }
+      
       setNewMilestone({ name: '', amount: '', monthIndex: 1 });
       fetchFinancials();
     } catch (err) {
-      alert('Network transmission error.');
+      alert('Network transmission error: Server database connection unreachable.');
     }
   };
 
@@ -105,8 +123,8 @@ function App() {
     return '$' + Math.round(value).toLocaleString('en-US');
   };
 
-  if (loading) return <div style={{ backgroundColor: '#0b0f19', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>COMPILING ADVANCED SCENARIO ENGINE...</div>;
-  if (error) return <div>Pipeline Connection Error.</div>;
+  if (loading) return <div style={{ backgroundColor: '#070a13', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>COMPILING ADVANCED SCENARIO ENGINE...</div>;
+  if (error) return <div style={{ backgroundColor: '#070a13', color: '#ef4444', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>Pipeline Connection Error: {error}</div>;
 
   // --- ADVANCED PROPAGATION FORECASTING MATH ---
   let dynamicCashTrack = dbData.currentCash;
@@ -266,10 +284,38 @@ function App() {
               <input type="text" placeholder="Inflow Name (e.g. Series A)" value={newMilestone.name} onChange={(e) => setNewMilestone({...newMilestone, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #334155', backgroundColor: '#070a13', color: '#fff' }} required />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <input type="number" placeholder="Amount" value={newMilestone.amount} onChange={(e) => setNewMilestone({...newMilestone, amount: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #334155', backgroundColor: '#070a13', color: '#fff' }} required />
-                <input type="number" min="1" max="12" placeholder="Target Month" value={newMilestone.monthIndex} onChange={(e) => setNewMilestone({...newMilestone, monthIndex: parseInt(e.target.value) || 1})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #334155', backgroundColor: '#070a13', color: '#fff' }} required />
+                <input type="number" min="1" max="12" placeholder="Target Month" value={newMilestone.monthIndex} onChange={(e) => setNewMilestone({...newMilestone, monthIndex: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #334155', backgroundColor: '#070a13', color: '#fff' }} required />
               </div>
               <button type="submit" style={{ padding: '12px', borderRadius: '6px', backgroundColor: '#10b981', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '700' }}>Commit Ledger Record</button>
             </form>
+          </div>
+
+          {/* RESTORED: Active Milestone Registry List Component Layout */}
+          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
+            <div style={{ borderBottom: '1px solid #1f2937', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ color: '#f8fafc', fontSize: '16px', fontWeight: '700', margin: 0 }}>Active Milestone Registry</h3>
+              <p style={{ color: '#64748b', fontSize: '12px', margin: '4px 0 0 0' }}>Manage live database parameters and entries</p>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '240px', overflowY: 'auto' }}>
+              {dbData.milestones.map((m) => (
+                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#070a13', padding: '12px 16px', borderRadius: '8px', border: '1px solid #1e293b' }}>
+                  <div>
+                    <div style={{ fontWeight: '700', color: '#38bdf8', fontSize: '13px' }}>{m.name}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Month {m.monthIndex} • <span style={{ color: '#10b981', fontWeight: '600' }}>{formatMoney(m.amount)}</span></div>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteMilestone(m.id)}
+                    style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '11px' }}
+                  >
+                    Purge
+                  </button>
+                </div>
+              ))}
+              {dbData.milestones.length === 0 && (
+                <div style={{ color: '#475569', fontSize: '13px', textAlign: 'center', padding: '24px', backgroundColor: '#070a13', borderRadius: '8px' }}>No active milestones found in the database.</div>
+              )}
+            </div>
           </div>
 
         </div>
@@ -318,7 +364,7 @@ function App() {
           </div>
 
         </div>
-
+   
       </div>
     </div>
   );
