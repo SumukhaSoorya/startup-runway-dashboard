@@ -1,0 +1,14 @@
+{
+  "files.associations": {
+    "*.sql": "mysql"
+  },
+  "sql.dialect": "MySQL",
+  "mssql.intelliSense.enableIntelliSense": false,
+  "mssql.intelliSense.enableErrorChecking": false,
+  "mssql.intelliSense.enableQuickInfo": false,
+  "mssql.intelliSense.enableSuggestions": false,
+  "mssql.enableSqlAuthenticationProvider": false,
+  "sqltools.format": {
+    "dialect": "mysql"
+  }
+}

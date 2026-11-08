@@ -1,35 +1,95 @@
-# startup-runway-dashboard
-Full-stack financial health analytics and scenario-planning dashboard for startup founders.
+# RunwayPulse AI — Autonomous Startup Runway & Liquidity Intelligence
 
+**RunwayPulse AI** is an AI-augmented, enterprise-grade financial health analytics cockpit and liquidity runway intelligence platform built for tech startup founders, venture boards, and fractional CFOs. 
 
-# RunwayPulse 
-
-**RunwayPulse** is a full-stack, enterprise-grade financial health analytics matrix built specifically for startup founders and fractional CFOs. Moving away from heavy, over-engineered accounting suites, this dashboard acts as a singular "Dashboard of Truth" to answer the most critical operational survival question for a company in under 5 seconds: *"Exactly how many calendar days do we have left before our bank balance hits absolute zero?"*
-
-Built with an ultra-modern **Terminal Obsidian** high-contrast UI theme, this application simulates multi-scenario projections, expense categorizations, and episodic capital injections out-of-the-box.
+It provides real-time scenario simulation, bi-directional collaborator synchronization via WebSockets, multi-tenant database isolation, multi-currency reporting, and an autonomous AI CFO copilot powered by `@google/genai` (`gemini-2.5-flash`) with deterministic heuristic fallbacks.
 
 ---
 
-## 🚀 Key  Features
+## ⚡ Core Architecture & Upgrades
 
-*   **Episodic Funding & Cash-Inflow Tranches:** Models exactly what happens to a startup's operational runway when milestone capitals (e.g., $500k Seed Rounds or Tech Grants) clear in future target months.
-*   **Granular Multi-Variable Burn Sliders:** Simulates real-time headcount engineering payroll changes, marketing budget expansions, or operational trims to witness immediate cash-out timelines.
-*   **Survival Telemetry Thresholds:** Calculates and flags companies instantly as either `DEFAULT ALIVE` or `DEFAULT DEAD` based on their 12-month trailing horizon metrics.
-*   **Glassmorphism Area Charts:** Built with custom translucent svg-glow charts using `Recharts` to draw precise rolling cash exhaustion vectors down to parity lines.
+```
+┌────────────────────────────────────────────────────────┐
+│             RunwayPulse Executive Frontend              │
+│       Cyber-Glassmorphism UI • React 19 • Recharts     │
+└───────────────▲────────────────────────▲───────────────┘
+                │ HTTP / REST            │ WebSocket Sync
+                │ (JWT Bearer Token)     │ (Socket.io)
+┌───────────────▼────────────────────────▼───────────────┐
+│               Node.js / Express API Engine             │
+│        Port 5002 • CORS Guarded • verifyToken Gate     │
+└───────┬────────────────────────┬───────────────┬───────┘
+        │                        │               │
+        ▼                        ▼               ▼
+┌──────────────┐         ┌──────────────┐ ┌──────────────┐
+│  Multi-Tenant│         │  AI CFO Gate │ │ Socket Engine│
+│   MySQL 8.0  │         │@google/genai │ │ Live State   │
+│ (user_id FK) │         │ (Gemini 2.5) │ │ Broadcast    │
+└──────────────┘         └──────────────┘ └──────────────┘
+```
+
+### 1. Modern Visual Interface (Cyber-Glassmorphism)
+- **Deep Midnight Radial Palette:** `radial-gradient(circle at 15% 15%, #0f172a 0%, #030712 100%)`
+- **Frosted Glass Panels:** Translucent frosted containers (`rgba(15, 23, 42, 0.75)`, `backdrop-filter: blur(16px)`, `1px solid rgba(255, 255, 255, 0.08)`).
+- **Controls & Sliders:** Glowing neon cyan (`#38bdf8`), violet (`#a855f7`), and amber (`#f59e0b`) range levers.
+- **One-Click Strategic Presets:**
+  - 🛡️ **Austerity:** 70% Hiring | 70% Marketing | 1.0% Yield
+  - ⚖️ **Baseline:** 100% Hiring | 100% Marketing | 1.5% Yield
+  - 🚀 **Hypergrowth:** 150% Hiring | 140% Marketing | 2.5% Yield
+- **Multi-Currency Formatting:** Instant USD ($) / INR (₹) toggle with regional thousand-separator formatting (`en-US` and `en-IN`).
+- **High Data-Ink Ratio:** Telemetry deck covering Algorithmic Runway, Terminal Monthly Burn, Treasury Cash, and Baseline MRR with zero visual noise.
+
+### 2. Autonomous AI CFO Copilot
+- **Route:** `POST /api/ai/analyze` (Guarded by `verifyToken`).
+- **Google GenAI SDK:** Leverages `@google/genai` with model `gemini-2.5-flash` via `process.env.GEMINI_API_KEY`.
+- **Intelligent Heuristic Fallback:** Built-in deterministic risk-scoring engine that guarantees 100% uptime with actionable advice even without an API key or during network disruptions.
+- **Audit Deliverable:** Formatted liquidity risk analysis, default vulnerability diagnosis, and 2 concrete strategic action points.
+
+### 3. Multi-Tenant User Isolation & Schema Integrity
+- **Database Tables:**
+  - `users`: Authenticated user credentials with hashed/verified access keys.
+  - `company_financials`: Foreign key `user_id REFERENCES users(id) ON DELETE CASCADE`.
+  - `funding_milestones`: Foreign key `user_id REFERENCES users(id) ON DELETE CASCADE`.
+- **Multi-Tenant Protection:** Every `SELECT`, `INSERT`, and `DELETE` query is strictly guarded by `WHERE user_id = req.user.id`.
+- **Auto-Provisioning:** Registration (`POST /api/auth/register`) captures `result.insertId`, issues a 24-hour signed JWT `{ id, email }`, and provisions a baseline `$1,000,000` capital profile automatically.
+
+### 4. Real-Time Collaboration & Bulk Ingestion
+- **WebSocket Broadcast:** Collaborative scenario modeling where adjustments to headcount or marketing sliders broadcast live across connected devices.
+- **CSV Ingestion:** Ingest bulk spreadsheets (`POST /api/milestones/bulk`) with downloadable sample template.
 
 ---
 
-## 🛠️ Technical Stack & Architecture
+## 🛠️ Port Bindings & Services
 
-### Frontend Engine
-*   **React 19** with lightning-fast **Vite** compilation.
-*   **Recharts** for hardware-accelerated telemetry visuals.
-*   **Lucide React** for modern interface graphic accents.
-*   **Custom Modular CSS Engine** built with optimized fluid responsive variables.
-
-### Backend Engine (Upcoming Phase)
-*   **Node.js & Express API Gateway** for microservice operations.
-*   **MySQL Database Connection** to manage records, log recurring transactions, and protect system accounts.
+| Service | Port | Status | Access URL |
+| :--- | :--- | :--- | :--- |
+| **Backend API Engine** | `5002` | `RUNNING` | `http://localhost:5002` |
+| **Frontend Web App** | `5173` | `RUNNING` | `http://localhost:5173` |
+| **MySQL Database** | `3306` | `RUNNING` | `runway_pulse_db` |
 
 ---
 
+## 🚀 Running the Project
+
+### 1. Backend (`backend/`)
+```bash
+cd backend
+npm install
+npm run dev # Starts on port 5002
+```
+
+### 2. Frontend (`frontend/`)
+```bash
+cd frontend
+npm install
+npm run dev # Starts on port 5173
+```
+
+### 3. Seed Institutional Demo Account
+```bash
+cd backend
+node seed.js
+```
+Default credentials:
+- **Email:** `admin@enterprise.com`
+- **Password:** `admin123`
